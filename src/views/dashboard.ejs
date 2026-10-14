@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PulseLogix — Enterprise IoT &amp; Real-Time Operations Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+            },
+            dark: {
+              base: '#080C14',
+              surface: '#0E1526',
+              elevated: '#151F38',
+              border: 'rgba(255, 255, 255, 0.08)',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #080C14;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(6, 182, 212, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(99, 102, 241, 0.05) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+    .glass-panel {
+      background: rgba(14, 21, 38, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-panel-elevated {
+      background: rgba(21, 31, 56, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .pulse-dot {
+      box-shadow: 0 0 10px currentColor;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.4);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.6);
+    }
+  </style>
+</head>
+<body class="font-sans text-slate-100 min-h-screen antialiased flex flex-col justify-between">
+
+  <!-- Main Container -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
+    
+    <!-- Top Navigation & Brand Header -->
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-slate-800/80">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-slate-950 font-bold text-2xl">
+          ⚡
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">PulseLogix</h1>
+            <span class="text-xs uppercase tracking-wider font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Operations</span>
+            <span class="text-xs font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-300"><%= infra.nodeEnv %></span>
+          </div>
+          <p class="text-slate-400 text-xs sm:text-sm mt-0.5">Enterprise IoT &amp; Real-Time Event Monitoring Platform · Sub-50ms Telemetry Pipeline</p>
+        </div>
+      </div>
+
+      <!-- Infrastructure Health Pills -->
+      <div class="flex flex-wrap items-center gap-2 text-xs font-mono">
+        <div class="glass-panel px-3 py-1.5 rounded-lg flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full <%= infra.mongo === 'up' ? 'bg-emerald-400 pulse-dot' : 'bg-rose-500' %>"></span>
+          <span class="text-slate-400">MongoDB:</span>
+          <span class="font-semibold <%= infra.mongo === 'up' ? 'text-emerald-400' : 'text-rose-400' %>" id="infra-mongo"><%= infra.mongo.toUpperCase() %></span>
+        </div>
+        <div class="glass-panel px-3 py-1.5 rounded-lg flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full <%= infra.redis === 'up' ? 'bg-cyan-400 pulse-dot' : 'bg-amber-400' %>"></span>
+          <span class="text-slate-400">Redis:</span>
+          <span class="font-semibold text-cyan-300" id="infra-redis"><%= infra.redis.toUpperCase() %></span>
+        </div>
+        <div class="glass-panel px-3 py-1.5 rounded-lg flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-indigo-400 pulse-dot"></span>
+          <span class="text-slate-400">EventBus:</span>
+          <span class="font-semibold text-indigo-300" id="infra-events"><%= events ? events.published : 0 %> msgs</span>
+        </div>
+        <div class="glass-panel px-3 py-1.5 rounded-lg flex items-center gap-2">
+          <span class="text-slate-400">Uptime:</span>
+          <span class="text-slate-200 font-semibold" id="infra-uptime"><%= infra.uptimeSec %>s</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Top KPI Grid -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="kpi-section">
+      <!-- Total Ingestion Card -->
+      <div class="glass-panel rounded-2xl p-5 relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-300">
+        <div class="flex justify-between items-start">
+          <p class="text-xs uppercase tracking-wider font-semibold text-slate-400">Total Telemetry (24h)</p>
+          <span class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 text-sm">📊</span>
+        </div>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span class="text-3xl font-extrabold tracking-tight text-white font-mono" id="stat-total-events"><%= summary ? summary.totals.totalEvents : 0 %></span>
+          <span class="text-xs text-emerald-400 font-medium font-mono">P50 &lt; 50ms</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Continuous low-latency write path</p>
+      </div>
+
+      <!-- Unique Devices Card -->
+      <div class="glass-panel rounded-2xl p-5 relative overflow-hidden group hover:border-cyan-500/30 transition-all duration-300">
+        <div class="flex justify-between items-start">
+          <p class="text-xs uppercase tracking-wider font-semibold text-slate-400">Connected Fleet</p>
+          <span class="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 text-sm">📡</span>
+        </div>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span class="text-3xl font-extrabold tracking-tight text-white font-mono" id="stat-unique-devices"><%= summary ? summary.totals.uniqueDevices : 0 %></span>
+          <span class="text-xs text-cyan-400 font-medium">IoT Nodes</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Unique devices active in window</p>
+      </div>
+
+      <!-- Metrics Types Tracked -->
+      <div class="glass-panel rounded-2xl p-5 relative overflow-hidden group hover:border-indigo-500/30 transition-all duration-300">
+        <div class="flex justify-between items-start">
+          <p class="text-xs uppercase tracking-wider font-semibold text-slate-400">Metrics Tracked</p>
+          <span class="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 text-sm">📈</span>
+        </div>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span class="text-3xl font-extrabold tracking-tight text-white font-mono" id="stat-metrics-count"><%= summary ? summary.byMetric.length : 0 %></span>
+          <span class="text-xs text-indigo-400 font-medium">Dimensions</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Cached &amp; auto-invalidated on write</p>
+      </div>
+
+      <!-- Active Alerts Card -->
+      <div class="glass-panel rounded-2xl p-5 relative overflow-hidden group hover:border-amber-500/30 transition-all duration-300">
+        <div class="flex justify-between items-start">
+          <p class="text-xs uppercase tracking-wider font-semibold text-slate-400">Active Alert Stream</p>
+          <span class="p-2 rounded-lg bg-amber-500/10 text-amber-400 text-sm">⚠️</span>
+        </div>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span class="text-3xl font-extrabold tracking-tight <%= alerts.length ? 'text-amber-400' : 'text-slate-300' %> font-mono" id="stat-alerts-count"><%= alerts.length %></span>
+          <span class="text-xs text-amber-400 font-medium">Threshold Breaches</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Async background alert dispatch</p>
+      </div>
+    </section>
+
+    <!-- Interactive Ops Toolset / Live Telemetry Simulator -->
+    <section class="glass-panel rounded-2xl p-6 border border-emerald-500/20 bg-gradient-to-r from-slate-900/90 via-slate-900/60 to-emerald-950/20">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-emerald-400 text-lg">🧪</span>
+            <h2 class="text-base font-bold text-white tracking-tight">Interactive Ops Simulator &amp; Ingestion Testpad</h2>
+            <span class="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Live API Ingestion</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">Simulate live telemetry events directly against the Express ingestion pipeline and verify sub-50ms latency &amp; alert triggers.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btn-normal" onclick="simulateIngest('sensor-01', 'temperature', 72.5, 'C')" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition border border-slate-700 flex items-center gap-1.5 active:scale-95">
+            <span>🌡️</span> Sample Temp (72.5°C)
+          </button>
+          <button id="btn-alert-temp" onclick="simulateIngest('sensor-02', 'temperature', 94.8, 'C')" class="px-3 py-2 rounded-xl bg-amber-950/80 hover:bg-amber-900 text-amber-200 text-xs font-medium transition border border-amber-700/60 flex items-center gap-1.5 active:scale-95">
+            <span>🔥</span> Temp Breach (94.8°C &gt; 80)
+          </button>
+          <button id="btn-alert-battery" onclick="simulateIngest('drone-alpha', 'battery', 6.2, '%')" class="px-3 py-2 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-200 text-xs font-medium transition border border-rose-700/60 flex items-center gap-1.5 active:scale-95">
+            <span>🔋</span> Battery Critical (6.2% &lt; 10)
+          </button>
+          <button id="btn-batch" onclick="simulateBatch()" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 text-xs font-bold transition shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 active:scale-95">
+            <span>🚀</span> Send Batch (5 Events)
+          </button>
+        </div>
+      </div>
+
+      <!-- Simulator Output Banner -->
+      <div id="sim-toast" class="hidden mt-4 p-3 rounded-xl text-xs font-mono flex items-center justify-between border transition-all">
+        <span id="sim-toast-msg"></span>
+        <span id="sim-toast-meta" class="font-bold"></span>
+      </div>
+    </section>
+
+    <!-- Two-Column Analytics Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      
+      <!-- Metrics Breakdown Table -->
+      <div class="glass-panel rounded-2xl p-6 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+            <div>
+              <h2 class="text-base font-semibold text-white">Aggregated Metrics</h2>
+              <p class="text-xs text-slate-400">MongoDB Aggregation Pipeline · Redis Cache Layer</p>
+            </div>
+            <span class="text-xs font-mono px-2 py-1 rounded bg-slate-800 text-slate-300">GET /api/v1/metrics/summary</span>
+          </div>
+
+          <div class="overflow-x-auto mt-4">
+            <table class="w-full text-left text-xs font-mono">
+              <thead>
+                <tr class="text-slate-400 uppercase tracking-wider border-b border-slate-800/80">
+                  <th class="py-2.5 px-3">Metric</th>
+                  <th class="py-2.5 px-3">Count</th>
+                  <th class="py-2.5 px-3">Avg</th>
+                  <th class="py-2.5 px-3">Min / Max</th>
+                </tr>
+              </thead>
+              <tbody id="metrics-tbody" class="divide-y divide-slate-800/60">
+                <% if (summary && summary.byMetric && summary.byMetric.length) { %>
+                  <% summary.byMetric.forEach(m => { %>
+                    <tr class="hover:bg-slate-800/30 transition">
+                      <td class="py-2.5 px-3 font-semibold text-emerald-400"><%= m.metric %></td>
+                      <td class="py-2.5 px-3 text-slate-200"><%= m.count %></td>
+                      <td class="py-2.5 px-3 text-cyan-300"><%= m.avgValue %></td>
+                      <td class="py-2.5 px-3 text-slate-400"><%= m.minValue %> / <%= m.maxValue %></td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="4" class="py-6 text-center text-slate-500">No telemetry ingested yet. Use the simulator above to stream events!</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+          <span>Cache TTL: <b>30s</b> (Auto-cleared on write)</span>
+          <span class="text-emerald-400">● Cache Invalidation Active</span>
+        </div>
+      </div>
+
+      <!-- Top Devices & Active Alerts -->
+      <div class="space-y-6">
+        
+        <!-- Top Devices Card -->
+        <div class="glass-panel rounded-2xl p-6">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div>
+              <h2 class="text-base font-semibold text-white">Top Active IoT Devices</h2>
+              <p class="text-xs text-slate-400">Highest Ingestion Volume in 24h Window</p>
+            </div>
+            <span class="text-xs font-mono text-cyan-400">Fleet Analytics</span>
+          </div>
+
+          <div class="overflow-x-auto mt-3">
+            <table class="w-full text-left text-xs font-mono">
+              <thead>
+                <tr class="text-slate-400 uppercase tracking-wider border-b border-slate-800/80">
+                  <th class="py-2 px-3">Device ID</th>
+                  <th class="py-2 px-3 text-right">Events Ingested</th>
+                  <th class="py-2 px-3 text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody id="devices-tbody" class="divide-y divide-slate-800/60">
+                <% if (summary && summary.topDevices && summary.topDevices.length) { %>
+                  <% summary.topDevices.forEach(d => { %>
+                    <tr class="hover:bg-slate-800/30 transition">
+                      <td class="py-2 px-3 font-semibold text-slate-200"><%= d.deviceId %></td>
+                      <td class="py-2 px-3 text-right text-emerald-400"><%= d.events %></td>
+                      <td class="py-2 px-3 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300">ONLINE</span></td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr><td colspan="3" class="py-4 text-center text-slate-500">No device telemetry yet</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Recent Alerts Container -->
+        <div class="glass-panel rounded-2xl p-6">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div>
+              <h2 class="text-base font-semibold text-white">Real-Time Threshold Alerts</h2>
+              <p class="text-xs text-slate-400">Dispatched via Async EventBus Layer</p>
+            </div>
+            <span class="text-xs font-mono text-amber-400">Kafka/RabbitMQ Sim</span>
+          </div>
+
+          <div id="alerts-container" class="space-y-2 mt-4 max-h-48 overflow-y-auto pr-1">
+            <% if (alerts && alerts.length) { %>
+              <% alerts.forEach(a => { %>
+                <div class="p-3 rounded-xl bg-amber-950/40 border border-amber-800/50 flex items-start justify-between gap-3 text-xs font-mono">
+                  <div class="flex items-start gap-2">
+                    <span class="text-amber-400 font-bold">⚠️</span>
+                    <div>
+                      <p class="text-amber-200 font-semibold"><%= a.message %></p>
+                      <p class="text-[10px] text-slate-400 mt-0.5">Device: <%= a.deviceId %> · Metric: <%= a.metric %> · Value: <%= a.value %> (Threshold: <%= a.threshold %>)</p>
+                    </div>
+                  </div>
+                  <span class="text-[10px] text-slate-400 shrink-0"><%= a.at ? new Date(a.at).toLocaleTimeString() : 'Just now' %></span>
+                </div>
+              <% }) %>
+            <% } else { %>
+              <div class="py-4 text-center text-slate-500 text-xs">No active alerts. Thresholds: Temp &gt; 80°C, CPU &gt; 90%, Battery &lt; 10%.</div>
+            <% } %>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Live Stream & Audit Logs Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      
+      <!-- Live Ingestion Stream -->
+      <div class="glass-panel rounded-2xl p-6">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+          <div>
+            <h2 class="text-base font-semibold text-white">Live Ingested Telemetry Feed</h2>
+            <p class="text-xs text-slate-400">Sub-50ms Direct Ingestion Log</p>
+          </div>
+          <span class="text-xs font-mono text-emerald-400 animate-pulse">● LIVE STREAM</span>
+        </div>
+
+        <div id="recent-telemetry-list" class="space-y-2 mt-4 max-h-72 overflow-y-auto pr-1 text-xs font-mono">
+          <% if (recent && recent.length) { %>
+            <% recent.forEach(t => { %>
+              <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-emerald-400 font-bold">»</span>
+                  <span class="text-white font-semibold"><%= t.deviceId %></span>
+                  <span class="text-slate-400">·</span>
+                  <span class="text-cyan-300"><%= t.metric %> = <%= t.value %><%= t.unit ? ' ' + t.unit : '' %></span>
+                </div>
+                <span class="text-[10px] text-slate-400"><%= new Date(t.timestamp).toLocaleTimeString() %></span>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div class="py-6 text-center text-slate-500">Waiting for incoming telemetry stream...</div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Support & Ops Audit Log Explorer -->
+      <div class="glass-panel rounded-2xl p-6">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+          <div>
+            <h2 class="text-base font-semibold text-white">Security &amp; Support Audit Trail</h2>
+            <p class="text-xs text-slate-400">Paginated, Filterable RBAC Audit Endpoint</p>
+          </div>
+          <span class="text-xs font-mono text-slate-400">GET /api/v1/admin/audit-logs</span>
+        </div>
+
+        <div id="audit-logs-list" class="space-y-2 mt-4 max-h-72 overflow-y-auto pr-1 text-xs font-mono">
+          <% if (audits && audits.length) { %>
+            <% audits.forEach(a => { %>
+              <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="px-1.5 py-0.5 rounded text-[10px] bg-indigo-500/20 text-indigo-300 font-semibold"><%= a.action %></span>
+                  <span class="text-slate-300"><%= a.actor %></span>
+                  <% if (a.latencyMs) { %>
+                    <span class="text-[10px] text-emerald-400"><%= a.latencyMs %>ms</span>
+                  <% } %>
+                </div>
+                <span class="text-[10px] text-slate-400"><%= new Date(a.createdAt).toLocaleTimeString() %></span>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div class="py-6 text-center text-slate-500">No audit log records found.</div>
+          <% } %>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Quick API Reference Footer Card -->
+    <footer class="glass-panel rounded-2xl p-6 border border-slate-800 text-xs">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h3 class="font-semibold text-white text-sm">PulseLogix API Endpoints Cheatsheet</h3>
+          <p class="text-slate-400 mt-1">High-volume, enterprise endpoints secured with rate limiting and Redis caching.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 font-mono text-[11px]">
+          <span class="px-2 py-1 rounded bg-slate-800 text-emerald-300">POST /api/v1/telemetry</span>
+          <span class="px-2 py-1 rounded bg-slate-800 text-cyan-300">GET /api/v1/metrics/summary</span>
+          <span class="px-2 py-1 rounded bg-slate-800 text-indigo-300">POST /api/v1/auth/session</span>
+          <span class="px-2 py-1 rounded bg-slate-800 text-amber-300">GET /api/v1/admin/audit-logs</span>
+          <span class="px-2 py-1 rounded bg-slate-800 text-slate-300">GET /health</span>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Real-Time Auto-Refresh & Simulation Script -->
+  <script>
+    // Live Ingest Simulator
+    async function simulateIngest(deviceId, metric, value, unit) {
+      const toast = document.getElementById('sim-toast');
+      const msg = document.getElementById('sim-toast-msg');
+      const meta = document.getElementById('sim-toast-meta');
+
+      toast.className = 'mt-4 p-3 rounded-xl text-xs font-mono flex items-center justify-between border bg-slate-800/90 text-slate-300 border-slate-700';
+      toast.classList.remove('hidden');
+      msg.textContent = `Pushing: ${deviceId} ${metric}=${value}...`;
+      meta.textContent = 'Ingesting...';
+
+      const start = performance.now();
+      try {
+        const res = await fetch('/api/v1/telemetry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId, metric, value, unit }),
+        });
+        const elapsed = Math.round((performance.now() - start) * 10) / 10;
+        const data = await res.json();
+
+        if (res.ok) {
+          toast.className = 'mt-4 p-3 rounded-xl text-xs font-mono flex items-center justify-between border bg-emerald-950/60 text-emerald-200 border-emerald-800/80';
+          msg.textContent = `✓ Ingested: ${data.deviceId} · ${data.metric}=${data.value} (ID: ${data.id})`;
+          meta.textContent = `Server: ${data.latencyMs}ms | Roundtrip: ${elapsed}ms`;
+          refreshOverview();
+        } else {
+          toast.className = 'mt-4 p-3 rounded-xl text-xs font-mono flex items-center justify-between border bg-rose-950/60 text-rose-200 border-rose-800/80';
+          msg.textContent = `✗ Ingest Failed: ${data.error || 'Server error'}`;
+          meta.textContent = `HTTP ${res.status}`;
+        }
+      } catch (err) {
+        toast.className = 'mt-4 p-3 rounded-xl text-xs font-mono flex items-center justify-between border bg-rose-950/60 text-rose-200 border-rose-800/80';
+        msg.textContent = `✗ Network Error: ${err.message}`;
+        meta.textContent = 'ERR';
+      }
+    }
+
+    async function simulateBatch() {
+      const toast = document.getElementById('sim-toast');
+      const msg = document.getElementById('sim-toast-msg');
+      const meta = document.getElementById('sim-toast-meta');
+
+      toast.className = 'mt-4 p-3 rounded-xl text-xs font-mono flex items-center justify-between border bg-slate-800/90 text-slate-300 border-slate-700';
+      toast.classList.remove('hidden');
+      msg.textContent = 'Dispatching batch of 5 telemetry events...';
+      meta.textContent = 'Batching...';
+
+      const batch = [
+        { deviceId: 'gateway-01', metric: 'cpu', value: Math.floor(Math.random() * 40 + 30), unit: '%' },
+        { deviceId: 'gateway-01', metric: 'temperature', value: Math.floor(Math.random() * 20 + 60), unit: 'C' },
+        { deviceId: 'sensor-flow-4', metric: 'flow_rate', value: Math.floor(Math.random() * 100 + 200), unit: 'L/h' },
+        { deviceId: 'sensor-flow-4', metric: 'pressure', value: Math.floor(Math.random() * 15 + 40), unit: 'psi' },
+        { deviceId: 'drone-beta', metric: 'battery', value: Math.floor(Math.random() * 30 + 70), unit: '%' },
+      ];
+
+      const start = performance.now();
+      try {
+        const res = await fetch('/api/v1/telemetry/batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ batch }),
+        });
+        const elapsed = Math.round((performance.now() - start) * 10) / 10;
+        const data = await res.json();
+
+        if (res.ok) {
+          toast.className = 'mt-4 p-3 rounded-xl text-xs font-mono flex items-center justify-between border bg-emerald-950/60 text-emerald-200 border-emerald-800/80';
+          msg.textContent = `✓ Batch Ingested: ${data.inserted} events successfully queued`;
+          meta.textContent = `Roundtrip: ${elapsed}ms`;
+          refreshOverview();
+        } else {
+          toast.className = 'mt-4 p-3 rounded-xl text-xs font-mono flex items-center justify-between border bg-rose-950/60 text-rose-200 border-rose-800/80';
+          msg.textContent = `✗ Batch Failed: ${data.error || 'Server error'}`;
+          meta.textContent = `HTTP ${res.status}`;
+        }
+      } catch (err) {
+        toast.className = 'mt-4 p-3 rounded-xl text-xs font-mono flex items-center justify-between border bg-rose-950/60 text-rose-200 border-rose-800/80';
+        msg.textContent = `✗ Network Error: ${err.message}`;
+        meta.textContent = 'ERR';
+      }
+    }
+
+    // Dynamic Overview Auto-Refresh (every 4 seconds)
+    async function refreshOverview() {
+      try {
+        const res = await fetch('/api/v1/dashboard/overview');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // 1. Update Infrastructure Pills
+        if (data.infra) {
+          document.getElementById('infra-uptime').textContent = `${data.infra.uptimeSec}s`;
+          document.getElementById('infra-mongo').textContent = data.infra.mongo.toUpperCase();
+          document.getElementById('infra-redis').textContent = data.infra.redis.toUpperCase();
+        }
+        if (data.events) {
+          document.getElementById('infra-events').textContent = `${data.events.published} msgs`;
+        }
+
+        // 2. Update KPI Stats
+        if (data.summary && data.summary.totals) {
+          document.getElementById('stat-total-events').textContent = data.summary.totals.totalEvents;
+          document.getElementById('stat-unique-devices').textContent = data.summary.totals.uniqueDevices;
+        }
+        if (data.summary && data.summary.byMetric) {
+          document.getElementById('stat-metrics-count').textContent = data.summary.byMetric.length;
+
+          // Render Metrics Table
+          const tbody = document.getElementById('metrics-tbody');
+          if (data.summary.byMetric.length) {
+            tbody.innerHTML = data.summary.byMetric.map(m => `
+              <tr class="hover:bg-slate-800/30 transition">
+                <td class="py-2.5 px-3 font-semibold text-emerald-400">${m.metric}</td>
+                <td class="py-2.5 px-3 text-slate-200">${m.count}</td>
+                <td class="py-2.5 px-3 text-cyan-300">${m.avgValue}</td>
+                <td class="py-2.5 px-3 text-slate-400">${m.minValue} / ${m.maxValue}</td>
+              </tr>
+            `).join('');
+          }
+        }
+
+        // 3. Update Alerts
+        if (data.alerts) {
+          document.getElementById('stat-alerts-count').textContent = data.alerts.length;
+          const alertsContainer = document.getElementById('alerts-container');
+          if (data.alerts.length) {
+            alertsContainer.innerHTML = data.alerts.map(a => `
+              <div class="p-3 rounded-xl bg-amber-950/40 border border-amber-800/50 flex items-start justify-between gap-3 text-xs font-mono">
+                <div class="flex items-start gap-2">
+                  <span class="text-amber-400 font-bold">⚠️</span>
+                  <div>
+                    <p class="text-amber-200 font-semibold">${a.message}</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Device: ${a.deviceId} · Metric: ${a.metric} · Value: ${a.value} (Threshold: ${a.threshold})</p>
+                  </div>
+                </div>
+                <span class="text-[10px] text-slate-400 shrink-0">${a.at ? new Date(a.at).toLocaleTimeString() : 'Just now'}</span>
+              </div>
+            `).join('');
+          }
+        }
+
+        // 4. Update Top Devices
+        if (data.summary && data.summary.topDevices) {
+          const devTbody = document.getElementById('devices-tbody');
+          if (data.summary.topDevices.length) {
+            devTbody.innerHTML = data.summary.topDevices.map(d => `
+              <tr class="hover:bg-slate-800/30 transition">
+                <td class="py-2 px-3 font-semibold text-slate-200">${d.deviceId}</td>
+                <td class="py-2 px-3 text-right text-emerald-400">${d.events}</td>
+                <td class="py-2 px-3 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300">ONLINE</span></td>
+              </tr>
+            `).join('');
+          }
+        }
+
+        // 5. Update Recent Telemetry List
+        if (data.recent && data.recent.length) {
+          const telList = document.getElementById('recent-telemetry-list');
+          telList.innerHTML = data.recent.map(t => `
+            <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-emerald-400 font-bold">»</span>
+                <span class="text-white font-semibold">${t.deviceId}</span>
+                <span class="text-slate-400">·</span>
+                <span class="text-cyan-300">${t.metric} = ${t.value}${t.unit ? ' ' + t.unit : ''}</span>
+              </div>
+              <span class="text-[10px] text-slate-400">${new Date(t.timestamp).toLocaleTimeString()}</span>
+            </div>
+          `).join('');
+        }
+
+        // 6. Update Audit Log List
+        if (data.audits && data.audits.length) {
+          const auditList = document.getElementById('audit-logs-list');
+          auditList.innerHTML = data.audits.map(a => `
+            <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded text-[10px] bg-indigo-500/20 text-indigo-300 font-semibold">${a.action}</span>
+                <span class="text-slate-300">${a.actor}</span>
+                ${a.latencyMs ? `<span class="text-[10px] text-emerald-400">${a.latencyMs}ms</span>` : ''}
+              </div>
+              <span class="text-[10px] text-slate-400">${new Date(a.createdAt).toLocaleTimeString()}</span>
+            </div>
+          `).join('');
+        }
+
+      } catch (err) {
+        console.debug('Dashboard polling sync error:', err);
+      }
+    }
+
+    // Auto-refresh interval (every 4 seconds)
+    setInterval(refreshOverview, 4000);
+  </script>
+</body>
+</html>
